@@ -1,30 +1,48 @@
 package main
 
-import "math/rand"
+import (
+	"context"
+	"log"
+	"math/rand"
+	"time"
+)
 
 type Top struct {
-	state      int
+	state      State
 	volitility int
-	log        func(string, ...any)
+	period     time.Duration
+	Down       chan State
+	Up         chan any
 }
 
-func NewTop(volitility int, log func(string, ...any)) *Top {
-	return &Top{0, volitility, log}
-}
-
-func (t *Top) Tick() {
-	if t.volitility < rand.Intn(100) {
-		old := t.state
-		t.state += delta()
-		t.log("State %d -> %d", old, t.state)
+func NewTop(volitility int, period time.Duration) *Top {
+	return &Top{
+		newState(0, 0),
+		volitility,
+		period,
+		make(chan State, 10),
+		make(chan any, 10),
 	}
 }
 
-func delta() int {
-	base := rand.Intn(5) - 2
-	if base == 0 {
-		base += 3
-	}
+func (t *Top) Run(ctx context.Context) {
+	log.Printf(" | TOPP | Started\n")
 
-	return base
+	ticker := time.NewTicker(t.period * time.Microsecond)
+
+	for {
+		select {
+		case <-ctx.Done():
+			log.Printf(" | TOPP | Terminated: %+v\n", t.state)
+			return
+		case <-t.Up:
+			t.Down <- t.state
+		case <-ticker.C:
+			if t.volitility < rand.Intn(100) {
+				old := t.state
+				t.state = t.state.next()
+				log.Printf(" | TOPP | State %+v -> %+v\n", old, t.state)
+			}
+		}
+	}
 }
