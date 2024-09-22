@@ -15,10 +15,10 @@ type Home struct {
 	bottomPeriod time.Duration
 }
 
-var stub = State{0, 0, 0}
+var blank = State{0, 0, 0}
 
 func NewHome(down, up *Middle, top *Top, topPeriod, bottomPeriod time.Duration) *Home {
-	return &Home{newState(0, 0), down, up, top, topPeriod, bottomPeriod}
+	return &Home{blank, down, up, top, topPeriod, bottomPeriod}
 }
 
 func (h *Home) Run(ctx context.Context) {
@@ -41,7 +41,7 @@ func (h *Home) Run(ctx context.Context) {
 			}
 		case <-bottomPoll.C:
 			clock++
-			msg := Msg{query, 0, stub, clock}
+			msg := Msg{query, 0, blank, clock}
 			h.down.Send <- msg
 			log.Printf(" | HOME | Sent request: %+v\n", msg)
 		case msg := <-h.up.Recv:

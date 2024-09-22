@@ -42,8 +42,13 @@ func (a *Away) HandleRequest(msg Msg) {
 		}
 		a.bottom.down <- msg
 		a.bottom.down <- Msg{query, 0, msg.State, msg.Clock}
-		resp := <-a.bottom.up
-		a.HandleResponse(resp)
+		for {
+			resp := <-a.bottom.up
+			a.HandleResponse(resp)
+			if resp.Clock == msg.Clock {
+				break
+			}
+		}
 	} else {
 		a.bottom.down <- msg
 	}
