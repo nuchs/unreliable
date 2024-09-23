@@ -16,7 +16,7 @@ type Away struct {
 }
 
 func NewAway(down, up *Middle, bottom *Bottom, period time.Duration) *Away {
-	return &Away{0, -1, down, up, bottom, period}
+	return &Away{0, 1, down, up, bottom, period}
 }
 
 func (a *Away) Run(ctx context.Context) {
@@ -49,8 +49,17 @@ func (a *Away) HandleHome(msg Msg) {
 		log.Printf(" | AWAY | Bad clock: a(%+v) vs m(%+v)\n", a.clock, msg.Clock)
 		return
 	}
+	log.Printf(" | AWAY | Starting update: %+v\n", msg)
 	a.clock++
 	a.bottom.down <- msg
+	a.bottom.down <- Msg{status, blank, a.session, a.clock}
+	for {
+		resp := <-a.bottom.up
+		if resp.Clock == a.clock {
+			log.Printf(" | AWAY | Update complete: %+v\n", resp)
+			break
+		}
+	}
 }
 
 func (a *Away) HandleBottom(resp Resp) {
@@ -58,7 +67,7 @@ func (a *Away) HandleBottom(resp Resp) {
 		log.Printf(" | AWAY | Session mismatch: a(%+v) vs b(%+v)\n", a.session, resp.Session)
 		return
 	}
-	msg := Msg{status, blank, resp.Session, resp.Clock}
+	msg := Msg{status, resp.State, resp.Session, resp.Clock}
 	a.up.Send <- msg
 	log.Printf(" | AWAY | Sent status: %+v\n", msg)
 }

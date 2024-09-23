@@ -36,9 +36,11 @@ func (h *Home) Run(ctx context.Context) {
 			}
 		case msg := <-h.up.Recv:
 			log.Printf(" | HOME | Received request: %+v\n", msg)
-			msgOut := Msg{update, h.state, msg.Session, msg.Clock}
-			h.down.Send <- msgOut
-			log.Printf(" | HOME | Sent response: %+v\n", msgOut)
+			if h.state.Value != msg.State.Value {
+				msgOut := Msg{update, h.state, msg.Session, msg.Clock}
+				h.down.Send <- msgOut
+				log.Printf(" | HOME | Sent response: %+v\n", msgOut)
+			}
 		}
 	}
 }

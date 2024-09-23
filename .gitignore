@@ -17,5 +17,6 @@
 # Go workspace file
 go.work
 
-#excutable
+# run time files
 nodap
+log
