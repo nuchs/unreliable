@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"math/rand"
 	"time"
 )
 
@@ -24,6 +25,12 @@ func (a *Away) Run(ctx context.Context) {
 	poll := time.NewTicker(time.Microsecond * a.period)
 
 	for {
+		if rand.Float64() < 0.001 {
+			log.Printf(" | AWAY | Restarted\n")
+			a.clock = 1
+			a.session++
+		}
+
 		select {
 		case <-ctx.Done():
 			log.Printf(" | AWAY | Terminated\n")

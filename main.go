@@ -25,7 +25,7 @@ func main() {
 	}
 
 	log.SetFlags(log.Ltime | log.Lmicroseconds)
-	log.Printf(" | MAIN | Hello! It's a me, Nodap!\n")
+	log.Printf(" | MAIN | Hello! It's a me, Unreliable!\n")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	var wg sync.WaitGroup
