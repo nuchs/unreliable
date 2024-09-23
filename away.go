@@ -3,64 +3,62 @@ package main
 import (
 	"context"
 	"log"
+	"time"
 )
 
 type Away struct {
-	hash   int
-	down   *Middle
-	up     *Middle
-	bottom *Bottom
+	clock   int
+	session int
+	down    *Middle
+	up      *Middle
+	bottom  *Bottom
+	period  time.Duration
 }
 
-func NewAway(down, up *Middle, bottom *Bottom) *Away {
-	return &Away{-1, down, up, bottom}
+func NewAway(down, up *Middle, bottom *Bottom, period time.Duration) *Away {
+	return &Away{0, -1, down, up, bottom, period}
 }
 
 func (a *Away) Run(ctx context.Context) {
 	log.Printf(" | AWAY | Started\n")
+	poll := time.NewTicker(time.Microsecond * a.period)
 
 	for {
 		select {
 		case <-ctx.Done():
 			log.Printf(" | AWAY | Terminated\n")
 			return
-		case msg := <-a.down.Recv:
-			a.HandleRequest(msg)
+		case <-poll.C:
+			a.bottom.down <- Msg{status, blank, a.session, a.clock}
 		case msg := <-a.bottom.up:
-			a.HandleResponse(msg)
+			a.HandleBottom(msg)
+		case msg := <-a.down.Recv:
+			a.HandleHome(msg)
 		}
 	}
 }
 
-func (a *Away) HandleRequest(msg Msg) {
-	log.Printf(" | AWAY | Received request: %+v\n", msg)
-
-	if msg.Kind == update {
-		if msg.Hash != a.hash {
-			log.Printf(" | AWAY | Bad hash msg:%+v vs away:%+v\n", msg.Hash, a.hash)
-			return
-		}
-		a.bottom.down <- msg
-		a.bottom.down <- Msg{query, 0, msg.State, msg.Clock}
-		for {
-			resp := <-a.bottom.up
-			a.HandleResponse(resp)
-			if resp.Clock == msg.Clock {
-				break
-			}
-		}
-	} else {
-		a.bottom.down <- msg
+func (a *Away) HandleHome(msg Msg) {
+	log.Printf(" | AWAY | Received update: %+v\n", msg)
+	if msg.Session != a.session {
+		log.Printf(" | AWAY | Bad session: a(%+v) vs m(%+v)\n", a.session, msg.Session)
+		return
 	}
+
+	if msg.Clock < a.clock {
+		log.Printf(" | AWAY | Bad clock: a(%+v) vs m(%+v)\n", a.clock, msg.Clock)
+		return
+	}
+	a.clock++
+	a.bottom.down <- msg
 }
 
-func (a *Away) HandleResponse(resp Resp) {
-	if a.hash != resp.State.Hash {
-		a.hash = resp.State.Hash
-		log.Printf(" | AWAY | New hash: %+v\n", a.hash)
+func (a *Away) HandleBottom(resp Resp) {
+	if resp.Session != a.session {
+		log.Printf(" | AWAY | Session mismatch: a(%+v) vs b(%+v)\n", a.session, resp.Session)
+		return
 	}
-
-	msg := Msg{status, a.hash, resp.State, resp.Clock}
+	msg := Msg{status, blank, resp.Session, resp.Clock}
 	a.up.Send <- msg
-	log.Printf(" | AWAY | Sent response: %+v\n", msg)
+	log.Printf(" | AWAY | Sent status: %+v\n", msg)
 }

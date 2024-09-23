@@ -34,8 +34,8 @@ func main() {
 	down := NewMiddle("DOWN")
 	up := NewMiddle(" UP ")
 	bottom := NewBottom(config.target)
-	home := NewHome(down, up, top, config.topPoll, config.bottomPoll)
-	away := NewAway(down, up, bottom)
+	home := NewHome(down, up, top, config.topPoll)
+	away := NewAway(down, up, bottom, config.bottomPoll)
 
 	log.Printf(" | MAIN | Start simulation\n")
 	start(func() { bottom.Run(ctx, cancel) }, &wg)

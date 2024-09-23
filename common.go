@@ -5,11 +5,12 @@ import "math/rand"
 type State struct {
 	Value   int
 	Version int
-	Hash    int
 }
 
+var blank = State{0, 0}
+
 func newState(value int, version int) State {
-	return State{value, version, (value * 1000) + 111}
+	return State{value, version}
 }
 
 func (s State) next() State {
@@ -28,14 +29,13 @@ func delta() int {
 type Kind string
 
 const (
-	query  Kind = "query"
 	status Kind = "status"
 	update Kind = "update"
 )
 
 type Msg struct {
-	Kind  Kind
-	Hash  int
-	State State
-	Clock int
+	Kind    Kind
+	State   State
+	Session int
+	Clock   int
 }
